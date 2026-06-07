@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from .models import HandoffPacket, RuleResult
 from .parser import parse_simple_yaml
@@ -21,7 +21,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
 }
 
 
-def load_rule_config(path: str | None) -> Dict[str, Any]:
+def load_rule_config(path: Optional[str]) -> Dict[str, Any]:
     config = dict(DEFAULT_CONFIG)
     if not path:
         return config
@@ -37,7 +37,7 @@ def load_rule_config(path: str | None) -> Dict[str, Any]:
     return config
 
 
-def evaluate_rules(packet: HandoffPacket, config: Dict[str, Any] | None = None, sensitive_count: int = 0) -> List[RuleResult]:
+def evaluate_rules(packet: HandoffPacket, config: Optional[Dict[str, Any]] = None, sensitive_count: int = 0) -> List[RuleResult]:
     cfg = dict(DEFAULT_CONFIG)
     if config:
         cfg.update(config)

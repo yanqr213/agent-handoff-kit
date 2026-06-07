@@ -5,9 +5,9 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
-from typing import Sequence
+from typing import List, Optional, Sequence
 
-from .models import Report
+from .models import Finding, HandoffPacket, Report
 from .parser import ParseError, parse_file
 from .redaction import redact_packet, scan_text
 from .reports import render_json, render_markdown
@@ -30,7 +30,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: Sequence[str] | None = None) -> int:
+def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
 
@@ -67,8 +67,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 2
 
 
-def scan_packet(packet) -> list:
-    findings = []
+def scan_packet(packet: HandoffPacket) -> List[Finding]:
+    findings: List[Finding] = []
     fields = {
         "owner": packet.owner,
         "summary": packet.summary,
