@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import re
 from dataclasses import replace
-from typing import Callable, Iterable, List, Tuple
+from typing import Callable, Iterable, List, Tuple, Union
 
 from .models import Finding, HandoffPacket
 
 
-Pattern = Tuple[str, re.Pattern[str], str | Callable[[re.Match[str]], str]]
+Replacement = Union[str, Callable[[re.Match[str]], str]]
+Pattern = Tuple[str, re.Pattern[str], Replacement]
 
 
 PATTERNS: List[Pattern] = [
@@ -42,7 +43,7 @@ def redact_text(text: str) -> str:
     return redacted
 
 
-def redact_packet(packet: HandoffPacket) -> tuple[HandoffPacket, List[Finding]]:
+def redact_packet(packet: HandoffPacket) -> Tuple[HandoffPacket, List[Finding]]:
     findings: List[Finding] = []
 
     def redact_field(value: str, field: str) -> str:
