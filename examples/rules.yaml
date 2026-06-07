@@ -1,0 +1,12 @@
+required_fields:
+  - owner
+  - summary
+  - validation
+  - risks
+  - next_steps
+min_summary_chars: 30
+min_validation_items: 1
+min_risk_items: 1
+min_next_step_items: 1
+require_git_diff: false
+fail_on_sensitive_findings: false

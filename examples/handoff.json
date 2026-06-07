@@ -1,0 +1,22 @@
+{
+  "owner": "Platform Tools Team",
+  "summary": "Implemented an offline CLI for creating standardized AI coding agent handoff packets.",
+  "context": "The handoff should help another engineer review and continue the work without relying on chat history.",
+  "changes": [
+    "Added parser, rules, redaction, reporting, and CLI modules.",
+    "Added tests, examples, CI, and project documentation."
+  ],
+  "validation": [
+    "pytest",
+    "agent-handoff-kit examples/handoff.json --check --format json"
+  ],
+  "risks": [
+    "Pattern-based redaction is best effort.",
+    "Simple YAML support is intentionally limited."
+  ],
+  "next_steps": [
+    "Tune rule configuration for each team's release process.",
+    "Attach a git diff summary for larger changes."
+  ],
+  "git_diff": "No diff attached in this JSON example."
+}
