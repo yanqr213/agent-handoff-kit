@@ -1,7 +1,7 @@
 import json
 
 from agent_handoff_kit.models import Finding, HandoffPacket, Report, RuleResult
-from agent_handoff_kit.reports import render_json, render_markdown
+from agent_handoff_kit.reports import render_json, render_markdown, render_prompt
 
 
 def make_report():
@@ -35,3 +35,13 @@ def test_render_json_is_machine_readable():
     assert data["passed"] is True
     assert data["packet"]["owner"] == "Team A"
     assert data["findings"][0]["kind"] == "email"
+
+
+def test_render_prompt_is_agent_ready():
+    prompt = render_prompt(make_report())
+
+    assert "# Agent Continuation Prompt" in prompt
+    assert "You are continuing work from a previous AI coding agent" in prompt
+    assert "## Next Actions" in prompt
+    assert "1. Review." in prompt
+    assert "## Instructions For The Next Agent" in prompt

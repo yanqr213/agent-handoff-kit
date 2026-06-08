@@ -7,10 +7,11 @@ import sys
 from pathlib import Path
 from typing import List, Optional, Sequence
 
+from . import __version__
 from .models import Finding, HandoffPacket, Report
 from .parser import ParseError, parse_file
 from .redaction import redact_packet, scan_text
-from .reports import render_json, render_markdown
+from .reports import render_json, render_markdown, render_prompt
 from .rules import evaluate_rules, load_rule_config, passes
 
 
@@ -19,8 +20,14 @@ def build_parser() -> argparse.ArgumentParser:
         prog="agent-handoff-kit",
         description="Create reviewable AI coding agent handoff packets from Markdown/JSON/YAML inputs.",
     )
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument("input", help="Path to a Markdown, JSON, or YAML handoff input file.")
-    parser.add_argument("--format", choices=["markdown", "json"], default="markdown", help="Report output format.")
+    parser.add_argument(
+        "--format",
+        choices=["markdown", "json", "prompt"],
+        default="markdown",
+        help="Report output format.",
+    )
     parser.add_argument("--output", "-o", help="Write report to this path instead of stdout.")
     parser.add_argument("--config", help="Optional JSON/YAML rule configuration file.")
     parser.add_argument("--check", action="store_true", help="Exit non-zero when quality gates fail.")
@@ -50,9 +57,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             rule_results=rule_results,
             findings=findings,
             passed=passed,
-            source=str(Path(args.input)),
+            source=Path(args.input).as_posix(),
         )
-        rendered = render_json(report) if args.format == "json" else render_markdown(report)
+        rendered = render_report(report, args.format)
 
         if args.output:
             output_path = Path(args.output)
@@ -81,6 +88,14 @@ def scan_packet(packet: HandoffPacket) -> List[Finding]:
         for index, value in enumerate(getattr(packet, field)):
             findings.extend(scan_text(value, f"{field}[{index}]"))
     return findings
+
+
+def render_report(report: Report, output_format: str) -> str:
+    if output_format == "json":
+        return render_json(report)
+    if output_format == "prompt":
+        return render_prompt(report)
+    return render_markdown(report)
 
 
 if __name__ == "__main__":

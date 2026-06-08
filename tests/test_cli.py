@@ -1,5 +1,7 @@
 import json
 
+import pytest
+
 from agent_handoff_kit.cli import main
 
 
@@ -27,6 +29,15 @@ def test_cli_check_passes(tmp_path, capsys):
 
     assert code == 0
     assert json.loads(out)["passed"] is True
+
+
+def test_cli_version(capsys):
+    with pytest.raises(SystemExit) as exc:
+        main(["--version"])
+    out = capsys.readouterr().out
+
+    assert exc.value.code == 0
+    assert "agent-handoff-kit 0.2.0" in out
 
 
 def test_cli_check_fails_for_missing_fields(tmp_path, capsys):
@@ -60,3 +71,16 @@ def test_cli_writes_output_file(tmp_path):
 
     assert code == 0
     assert output.read_text(encoding="utf-8").startswith("# Agent Handoff Packet")
+
+
+def test_cli_prompt_format(tmp_path, capsys):
+    path = tmp_path / "handoff.json"
+    write_complete(path)
+
+    code = main([str(path), "--format", "prompt"])
+    out = capsys.readouterr().out
+
+    assert code == 0
+    assert "# Agent Continuation Prompt" in out
+    assert "## Instructions For The Next Agent" in out
+    assert str(path).replace("\\", "/") in out

@@ -1,6 +1,6 @@
 # Agent Handoff Kit
 
-Agent Handoff Kit 是一个离线 CLI，用于把 Codex、Claude Code、Cursor、ChatGPT 等 AI coding agent 的一次工作整理成可审查、可继续接手的 handoff packet。它从 Markdown/JSON/YAML 输入、git diff 摘要、验证记录、风险说明、未完成事项中生成标准化交接包，支持质量门禁、secret/PII 基础扫描、redaction，以及 Markdown/JSON 输出。
+Agent Handoff Kit 是一个离线 CLI，用于把 Codex、Claude Code、Cursor、ChatGPT 等 AI coding agent 的一次工作整理成可审查、可继续接手的 handoff packet。它从 Markdown/JSON/YAML 输入、git diff 摘要、验证记录、风险说明、未完成事项中生成标准化交接包，支持质量门禁、secret/PII 基础扫描、redaction，以及 Markdown/JSON/continuation prompt 输出。
 
 项目不需要 GitHub token，不调用远程服务，默认只使用 Python 标准库。测试依赖 `pytest`，仅用于开发和 CI。
 
@@ -10,6 +10,7 @@ Agent Handoff Kit 是一个离线 CLI，用于把 Codex、Claude Code、Cursor�
 - 团队希望让不同 agent 的工作交接格式保持一致。
 - PR 前需要检查交接材料是否包含 owner、summary、validation、risks、next steps。
 - 需要在分享交接文档前做基础 secret/PII 扫描和脱敏。
+- 需要把一次未完成工作转换成可直接粘给 Codex、Claude Code 或 Cursor 的继续执行提示词。
 - CI 中希望用 `--check` 阻止缺少关键交接信息的变更。
 
 ## 快速开始
@@ -18,6 +19,7 @@ Agent Handoff Kit 是一个离线 CLI，用于把 Codex、Claude Code、Cursor�
 python -m pip install -e ".[dev]"
 agent-handoff-kit examples/handoff.md
 agent-handoff-kit examples/handoff.json --format json
+agent-handoff-kit examples/handoff.md --format prompt --output continuation-prompt.md
 agent-handoff-kit examples/handoff.md --check --output handoff-report.md
 pytest
 ```
@@ -25,7 +27,7 @@ pytest
 安装后会得到命令：
 
 ```bash
-agent-handoff-kit INPUT [--format markdown|json] [--output PATH] [--check]
+agent-handoff-kit INPUT [--format markdown|json|prompt] [--output PATH] [--check]
 ```
 
 如果不想安装，也可以在源码目录运行：
@@ -193,6 +195,19 @@ JSON 输出：
 }
 ```
 
+Continuation prompt 输出：
+
+```bash
+agent-handoff-kit examples/handoff.md --format prompt --output continuation-prompt.md
+```
+
+生成的 `continuation-prompt.md` 会包含：
+
+- 当前目标、owner、背景和已完成变更。
+- 已运行验证命令、已知风险和下一步行动。
+- 质量门禁与敏感信息扫描结果。
+- 给下一位 agent 的执行约束：先确认 worktree、保留用户改动、优先处理高风险未完成项、完成后更新交接包。
+
 ## CI 用法
 
 GitHub Actions 示例已包含在 `.github/workflows/ci.yml`：
@@ -204,6 +219,8 @@ GitHub Actions 示例已包含在 `.github/workflows/ci.yml`：
   run: pytest
 - name: Example quality gate
   run: agent-handoff-kit examples/handoff.md --check --format json
+- name: Build continuation prompt
+  run: agent-handoff-kit examples/handoff.md --format prompt --output build/continuation-prompt.md
 ```
 
 `--check` 退出码：
@@ -232,7 +249,7 @@ GitHub Actions 示例已包含在 `.github/workflows/ci.yml`：
 
 ## English
 
-Agent Handoff Kit is an offline CLI for turning work from AI coding agents such as Codex, Claude Code, Cursor, and ChatGPT into a reviewable handoff packet that another developer can continue from. It reads Markdown/JSON/simple YAML inputs, optional git diff summaries, validation notes, risks, and next steps, then produces standardized Markdown or JSON reports with quality gates, basic secret/PII scanning, and redaction.
+Agent Handoff Kit is an offline CLI for turning work from AI coding agents such as Codex, Claude Code, Cursor, and ChatGPT into a reviewable handoff packet that another developer can continue from. It reads Markdown/JSON/simple YAML inputs, optional git diff summaries, validation notes, risks, and next steps, then produces standardized Markdown, JSON, or agent-ready continuation prompts with quality gates, basic secret/PII scanning, and redaction.
 
 It does not require a GitHub token, does not call remote services, and has no runtime dependencies outside the Python standard library. `pytest` is used only for development and CI.
 
@@ -242,6 +259,7 @@ It does not require a GitHub token, does not call remote services, and has no ru
 - Normalize handoff output across different coding agents and teams.
 - Require owner, summary, validation, risks, and next steps before PR review.
 - Run a basic secret/PII scan before sharing handoff notes.
+- Convert unfinished work into a prompt that the next Codex, Claude Code, Cursor, or ChatGPT session can continue from.
 - Enforce handoff completeness in CI with `--check`.
 
 ## Quick Start
@@ -250,6 +268,7 @@ It does not require a GitHub token, does not call remote services, and has no ru
 python -m pip install -e ".[dev]"
 agent-handoff-kit examples/handoff.md
 agent-handoff-kit examples/handoff.json --format json
+agent-handoff-kit examples/handoff.md --format prompt --output continuation-prompt.md
 agent-handoff-kit examples/handoff.md --check --output handoff-report.md
 pytest
 ```
@@ -257,7 +276,7 @@ pytest
 Installed command:
 
 ```bash
-agent-handoff-kit INPUT [--format markdown|json] [--output PATH] [--check]
+agent-handoff-kit INPUT [--format markdown|json|prompt] [--output PATH] [--check]
 ```
 
 Run from source without installation:
@@ -320,11 +339,12 @@ agent-handoff-kit examples/handoff.md --config examples/rules.yaml --check
 
 ## Output Examples
 
-Markdown reports include normalized handoff sections, quality gate results, and sensitive-data scan results. JSON reports contain `passed`, `packet`, `rules`, and `findings` keys for automation.
+Markdown reports include normalized handoff sections, quality gate results, and sensitive-data scan results. JSON reports contain `passed`, `packet`, `rules`, and `findings` keys for automation. Prompt reports are written as continuation prompts for the next agent session, including objective, context, completed changes, validation already run, known risks, next actions, gate findings, and explicit working instructions.
 
 ```bash
 agent-handoff-kit examples/handoff.md --format markdown
 agent-handoff-kit examples/handoff.md --format json
+agent-handoff-kit examples/handoff.md --format prompt --output continuation-prompt.md
 ```
 
 ## CI Usage
@@ -338,6 +358,8 @@ Use `--check` to fail builds when required handoff information is missing:
   run: pytest
 - name: Example quality gate
   run: agent-handoff-kit examples/handoff.md --check --format json
+- name: Build continuation prompt
+  run: agent-handoff-kit examples/handoff.md --format prompt --output build/continuation-prompt.md
 ```
 
 Exit codes:

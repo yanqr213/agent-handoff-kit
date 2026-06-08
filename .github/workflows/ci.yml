@@ -24,3 +24,5 @@ jobs:
         run: pytest
       - name: Example quality gate
         run: agent-handoff-kit examples/handoff.md --check --format json
+      - name: Prompt smoke test
+        run: agent-handoff-kit examples/handoff.md --format prompt --output build/continuation-prompt.md
